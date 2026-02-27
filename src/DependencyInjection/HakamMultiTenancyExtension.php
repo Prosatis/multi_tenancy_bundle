@@ -208,17 +208,17 @@ class HakamMultiTenancyExtension extends Extension implements PrependExtensionIn
 
             $this->checkDir($container->getParameter('kernel.project_dir'), $dbSwitcherConfig['tenant_entity_manager']['mapping']['dir']);
 
+            // DoctrineBundle 3.x forbids setting host/port when url is defined
+            $tenantConnParams = [
+                'url' => $dbSwitcherConfig['tenant_connection']['url'],
+                'charset' => $dbSwitcherConfig['tenant_connection']['charset'],
+                'server_version' => $dbSwitcherConfig['tenant_connection']['server_version'],
+                'wrapper_class' => TenantConnection::class,
+            ];
+
             $tenantConnectionConfig = [
                 'connections' => [
-                    'tenant' => [
-                        'driver' => $dbSwitcherConfig['tenant_connection']['driver'],
-                        'url' => $dbSwitcherConfig['tenant_connection']['url'],
-                        'host' => $dbSwitcherConfig['tenant_connection']['host'],
-                        'port' => $dbSwitcherConfig['tenant_connection']['port'],
-                        'charset' => $dbSwitcherConfig['tenant_connection']['charset'],
-                        'server_version' => $dbSwitcherConfig['tenant_connection']['server_version'],
-                        'wrapper_class' => TenantConnection::class,
-                    ],
+                    'tenant' => $tenantConnParams,
                 ],
             ];
             $tenantEntityManagerConfig = [
