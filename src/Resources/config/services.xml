@@ -46,7 +46,7 @@
 
         <service id="Hakam\MultiTenancyBundle\Command\DiffCommand">
             <tag name="console.command"/>
-            <argument type="service" id="Doctrine\Common\Persistence\ManagerRegistry"/>
+            <argument type="service" id="Doctrine\Persistence\ManagerRegistry"/>
             <argument type="service" id="service_container"/>
             <argument type="service" id="event_dispatcher"/>
             <argument type="service" id="Hakam\MultiTenancyBundle\Port\TenantDatabaseManagerInterface"/>
@@ -60,7 +60,7 @@
         </service>
         <service id="Hakam\MultiTenancyBundle\Command\MigrateCommand">
             <tag name="console.command"/>
-            <argument type="service" id="Doctrine\Common\Persistence\ManagerRegistry"/>
+            <argument type="service" id="Doctrine\Persistence\ManagerRegistry"/>
             <argument type="service" id="service_container"/>
             <argument type="service" id="event_dispatcher"/>
             <argument type="service" id="Hakam\MultiTenancyBundle\Port\TenantDatabaseManagerInterface"/>
@@ -68,7 +68,7 @@
 
         <service id="Hakam\MultiTenancyBundle\Command\LoadTenantFixtureCommand">
             <tag name="console.command"/>
-            <argument type="service" id="Doctrine\Common\Persistence\ManagerRegistry"/>
+            <argument type="service" id="Doctrine\Persistence\ManagerRegistry"/>
             <argument type="service" id="service_container"/>
             <argument type="service" id="event_dispatcher"/>
             <argument type="service" id="hakam_tenant_fixtures_loader.service"/>
