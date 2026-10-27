@@ -16,8 +16,6 @@ use Throwable;
 
 class DoctrineTenantDatabaseManager implements TenantDatabaseManagerInterface
 {
-    private readonly ObjectRepository $tenantDatabaseRepository;
-
     public function __construct(
         private readonly EntityManagerInterface                   $entityManager,
         #[Autowire(service: TenantDBALConnectionGenerator::class)]
@@ -27,14 +25,20 @@ class DoctrineTenantDatabaseManager implements TenantDatabaseManagerInterface
         #[Autowire('%hakam.tenant_db_identifier%')]
         private readonly string                                   $tenantDbIdentifier
     ) {
-        $this->tenantDatabaseRepository = $this->entityManager->getRepository($this->tenantDbEntityClassName);
+    }
+
+    // repository fetched on use, not in the constructor: loading entity metadata while the container builds
+    // (e.g. when console commands are registered) breaks DoctrineMetadataCacheWarmer on a fresh cache:clear
+    private function tenantDatabaseRepository(): ObjectRepository
+    {
+        return $this->entityManager->getRepository($this->tenantDbEntityClassName);
     }
 
     public function listDatabases(): array
     {
-        $databases = $this->tenantDatabaseRepository->findBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_MIGRATED]);
+        $databases = $this->tenantDatabaseRepository()->findBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_MIGRATED]);
         if (count($databases) === 0) {
-            throw new RuntimeException(sprintf('No tenant databases found in repository "%s"', get_class($this->tenantDatabaseRepository)));
+            throw new RuntimeException(sprintf('No tenant databases found in repository "%s"', get_class($this->tenantDatabaseRepository())));
         }
         return
             array_map(
@@ -45,9 +49,9 @@ class DoctrineTenantDatabaseManager implements TenantDatabaseManagerInterface
 
     public function listMissingDatabases(): array
     {
-        $databases = $this->tenantDatabaseRepository->findBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_NOT_CREATED]);
+        $databases = $this->tenantDatabaseRepository()->findBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_NOT_CREATED]);
         if (count($databases) === 0) {
-            throw new RuntimeException(sprintf('No tenant databases found in repository "%s"', get_class($this->tenantDatabaseRepository)));
+            throw new RuntimeException(sprintf('No tenant databases found in repository "%s"', get_class($this->tenantDatabaseRepository())));
         }
         return
             array_map(
@@ -58,9 +62,9 @@ class DoctrineTenantDatabaseManager implements TenantDatabaseManagerInterface
 
     public function getTenantDbListByDatabaseStatus(DatabaseStatusEnum $status): array
     {
-        $databases = $this->tenantDatabaseRepository->findBy(['databaseStatus' => $status]);
+        $databases = $this->tenantDatabaseRepository()->findBy(['databaseStatus' => $status]);
         if (count($databases) === 0) {
-            throw new RuntimeException(sprintf('No tenant databases found in repository "%s" with status "%s"', get_class($this->tenantDatabaseRepository), $status->value));
+            throw new RuntimeException(sprintf('No tenant databases found in repository "%s" with status "%s"', get_class($this->tenantDatabaseRepository()), $status->value));
         }
         return
             array_map(
@@ -71,18 +75,18 @@ class DoctrineTenantDatabaseManager implements TenantDatabaseManagerInterface
 
     public function getTenantDatabaseById(mixed $identifier): TenantConnectionConfigDTO
     {
-        $tenantDbConfig = $this->tenantDatabaseRepository->findOneBy([$this->tenantDbIdentifier => $identifier]);
+        $tenantDbConfig = $this->tenantDatabaseRepository()->findOneBy([$this->tenantDbIdentifier => $identifier]);
         if (null === $tenantDbConfig) {
-            throw new RuntimeException(sprintf('Tenant database with identifier "%s" not found in repository "%s"', $identifier, get_class($this->tenantDatabaseRepository)));
+            throw new RuntimeException(sprintf('Tenant database with identifier "%s" not found in repository "%s"', $identifier, get_class($this->tenantDatabaseRepository())));
         }
         return $this->convertToDTO($tenantDbConfig);
     }
 
     public function getDefaultTenantIDatabase(): TenantConnectionConfigDTO
     {
-        $tenantDbConfig = $this->tenantDatabaseRepository->findOneBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_CREATED]);
+        $tenantDbConfig = $this->tenantDatabaseRepository()->findOneBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_CREATED]);
         if (null === $tenantDbConfig) {
-            throw new RuntimeException(sprintf('No default tenant database found in repository "%s"', get_class($this->tenantDatabaseRepository)));
+            throw new RuntimeException(sprintf('No default tenant database found in repository "%s"', get_class($this->tenantDatabaseRepository())));
         }
         return $this->convertToDTO($tenantDbConfig);
     }
@@ -111,9 +115,9 @@ class DoctrineTenantDatabaseManager implements TenantDatabaseManagerInterface
 
     public function updateTenantDatabaseStatus(mixed $identifier, DatabaseStatusEnum $status): bool
     {
-        $tenantDbConfig = $this->tenantDatabaseRepository->findOneBy([$this->tenantDbIdentifier => $identifier]);
+        $tenantDbConfig = $this->tenantDatabaseRepository()->findOneBy([$this->tenantDbIdentifier => $identifier]);
         if (null === $tenantDbConfig) {
-            throw new RuntimeException(sprintf('Tenant database with identifier "%s" not found in repository "%s"', $identifier, get_class($this->tenantDatabaseRepository)));
+            throw new RuntimeException(sprintf('Tenant database with identifier "%s" not found in repository "%s"', $identifier, get_class($this->tenantDatabaseRepository())));
         }
         $tenantDbConfig->setDatabaseStatus($status);
         $this->entityManager->persist($tenantDbConfig);

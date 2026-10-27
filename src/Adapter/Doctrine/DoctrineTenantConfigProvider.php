@@ -14,19 +14,22 @@ use Hakam\MultiTenancyBundle\Services\TenantDbConfigurationInterface;
  */
 class DoctrineTenantConfigProvider implements TenantConfigProviderInterface
 {
-    private EntityRepository $entityRepository;
-
-    public function __construct(EntityManagerInterface $entityManager, private string $dbClassName, private string $dbIdentifier)
+    public function __construct(private EntityManagerInterface $entityManager, private string $dbClassName, private string $dbIdentifier)
     {
-        $this->entityRepository = $entityManager->getRepository($this->dbClassName);
+    }
+
+    // repository fetched on use - see DoctrineTenantDatabaseManager::tenantDatabaseRepository()
+    private function entityRepository(): EntityRepository
+    {
+        return $this->entityManager->getRepository($this->dbClassName);
     }
 
     public function getTenantConnectionConfig(mixed $identifier): TenantConnectionConfigDTO
     {
-        $tenantDbConfig = $identifier ? $this->entityRepository->findOneBy([$this->dbIdentifier => $identifier]) :
-            $this->entityRepository->findOneBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_MIGRATED]);
+        $tenantDbConfig = $identifier ? $this->entityRepository()->findOneBy([$this->dbIdentifier => $identifier]) :
+            $this->entityRepository()->findOneBy(['databaseStatus' => DatabaseStatusEnum::DATABASE_MIGRATED]);
         if (null === $tenantDbConfig) {
-            throw new \RuntimeException(sprintf('Tenant db repository " %s " returns NULL for identifier " %s = %s " ', get_class($this->entityRepository), $this->dbIdentifier, $identifier));
+            throw new \RuntimeException(sprintf('Tenant db repository " %s " returns NULL for identifier " %s = %s " ', get_class($this->entityRepository()), $this->dbIdentifier, $identifier));
         }
 
         if (!$tenantDbConfig instanceof TenantDbConfigurationInterface) {
