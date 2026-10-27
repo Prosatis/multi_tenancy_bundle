@@ -1,5 +1,6 @@
 <?php
 
+use Doctrine\Bundle\FixturesBundle\Purger\PurgerFactory;
 use Hakam\MultiTenancyBundle\Adapter\DefaultDsnGenerator;
 use Hakam\MultiTenancyBundle\Adapter\Doctrine\DoctrineTenantConfigProvider;
 use Hakam\MultiTenancyBundle\Adapter\Doctrine\DoctrineTenantDatabaseManager;
@@ -129,9 +130,12 @@ return static function (ContainerConfigurator $container): void {
 
     $services->alias(TenantEntityManager::class, 'tenant_entity_manager');
 
-    // Tenant purger factory
-    $services->set('hakam.tenant_purger_factory', TenantORMPurgerFactory::class)
-        ->tag('doctrine.fixtures.purger_factory', ['alias' => 'tenant_default']);
+    // Tenant purger factory - only with doctrine/doctrine-fixtures-bundle (usually require-dev), otherwise the
+    // container fails to compile on composer install --no-dev
+    if (interface_exists(PurgerFactory::class)) {
+        $services->set('hakam.tenant_purger_factory', TenantORMPurgerFactory::class)
+            ->tag('doctrine.fixtures.purger_factory', ['alias' => 'tenant_default']);
+    }
 
     // Tenant context
     $services->set(TenantContext::class)
